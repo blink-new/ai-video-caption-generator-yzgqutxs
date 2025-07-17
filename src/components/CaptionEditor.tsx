@@ -1,19 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Play, Pause, Download, Wand2, Settings } from 'lucide-react'
+import { ArrowLeft, Play, Pause, Download, Wand2, Settings, Sparkles, Video, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { VideoFile, Caption } from '@/App'
+import { VideoFile, Caption, BRollClip, Transition } from '@/App'
 import VideoPlayer from '@/components/VideoPlayer'
 import CaptionTimeline from '@/components/CaptionTimeline'
 import StylePanel from '@/components/StylePanel'
+import AnimationPanel from '@/components/AnimationPanel'
+import BRollPanel from '@/components/BRollPanel'
+import TransitionsPanel from '@/components/TransitionsPanel'
 import { useToast } from '@/hooks/use-toast'
 
 interface CaptionEditorProps {
   videoFile: VideoFile
   captions: Caption[]
   setCaptions: React.Dispatch<React.SetStateAction<Caption[]>>
+  brollClips: BRollClip[]
+  setBrollClips: React.Dispatch<React.SetStateAction<BRollClip[]>>
+  transitions: Transition[]
+  setTransitions: React.Dispatch<React.SetStateAction<Transition[]>>
   onBack: () => void
 }
 
@@ -21,12 +28,18 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
   videoFile,
   captions,
   setCaptions,
+  brollClips,
+  setBrollClips,
+  transitions,
+  setTransitions,
   onBack
 }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedCaption, setSelectedCaption] = useState<string | null>(null)
+  const [selectedBrollClip, setSelectedBrollClip] = useState<string | null>(null)
+  const [selectedTransition, setSelectedTransition] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const { toast } = useToast()
 
@@ -71,6 +84,11 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             fontFamily: 'Inter',
             position: 'bottom'
+          },
+          animation: {
+            type: 'fadeIn',
+            duration: 0.8,
+            delay: 0
           }
         },
         {
@@ -84,6 +102,11 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             fontFamily: 'Inter',
             position: 'bottom'
+          },
+          animation: {
+            type: 'slideUp',
+            duration: 0.6,
+            delay: 0.2
           }
         },
         {
@@ -97,6 +120,11 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             fontFamily: 'Inter',
             position: 'bottom'
+          },
+          animation: {
+            type: 'bounce',
+            duration: 1.0,
+            delay: 0
           }
         }
       ]
@@ -147,6 +175,30 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`
   }
 
+  const handlePreviewAnimation = (captionId: string) => {
+    const caption = captions.find(c => c.id === captionId)
+    if (caption && videoRef.current) {
+      videoRef.current.currentTime = caption.startTime
+      setCurrentTime(caption.startTime)
+      toast({
+        title: "Animation Preview",
+        description: `Previewing ${caption.animation.type} animation`,
+      })
+    }
+  }
+
+  const handlePreviewTransition = (transitionId: string) => {
+    const transition = transitions.find(t => t.id === transitionId)
+    if (transition && videoRef.current) {
+      videoRef.current.currentTime = transition.startTime
+      setCurrentTime(transition.startTime)
+      toast({
+        title: "Transition Preview",
+        description: `Previewing ${transition.type} transition`,
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -194,6 +246,8 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
                 ref={videoRef}
                 videoFile={videoFile}
                 captions={captions}
+                brollClips={brollClips}
+                transitions={transitions}
                 currentTime={currentTime}
                 onTimeUpdate={handleTimeUpdate}
                 onPlayStateChange={setIsPlaying}
@@ -245,14 +299,21 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
         {/* Right Panel */}
         <div className="w-80 border-l border-gray-200 bg-white">
           <Tabs defaultValue="style" className="h-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="style">
-                <Settings className="h-4 w-4 mr-2" />
-                Style
+            <TabsList className="grid w-full grid-cols-5 text-xs">
+              <TabsTrigger value="style" className="p-2">
+                <Settings className="h-3 w-3" />
               </TabsTrigger>
-              <TabsTrigger value="export">
-                <Download className="h-4 w-4 mr-2" />
-                Export
+              <TabsTrigger value="animations" className="p-2">
+                <Sparkles className="h-3 w-3" />
+              </TabsTrigger>
+              <TabsTrigger value="broll" className="p-2">
+                <Video className="h-3 w-3" />
+              </TabsTrigger>
+              <TabsTrigger value="transitions" className="p-2">
+                <Zap className="h-3 w-3" />
+              </TabsTrigger>
+              <TabsTrigger value="export" className="p-2">
+                <Download className="h-3 w-3" />
               </TabsTrigger>
             </TabsList>
             
@@ -261,6 +322,38 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
                 captions={captions}
                 setCaptions={setCaptions}
                 selectedCaption={selectedCaption}
+              />
+            </TabsContent>
+
+            <TabsContent value="animations" className="h-full p-0">
+              <AnimationPanel
+                captions={captions}
+                setCaptions={setCaptions}
+                selectedCaption={selectedCaption}
+                onPreviewAnimation={handlePreviewAnimation}
+              />
+            </TabsContent>
+
+            <TabsContent value="broll" className="h-full p-0">
+              <BRollPanel
+                brollClips={brollClips}
+                setBrollClips={setBrollClips}
+                videoDuration={videoFile.duration}
+                currentTime={currentTime}
+                selectedClip={selectedBrollClip}
+                onSelectClip={setSelectedBrollClip}
+              />
+            </TabsContent>
+
+            <TabsContent value="transitions" className="h-full p-0">
+              <TransitionsPanel
+                transitions={transitions}
+                setTransitions={setTransitions}
+                videoDuration={videoFile.duration}
+                currentTime={currentTime}
+                selectedTransition={selectedTransition}
+                onSelectTransition={setSelectedTransition}
+                onPreviewTransition={handlePreviewTransition}
               />
             </TabsContent>
             
@@ -296,6 +389,17 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
                     <Download className="h-4 w-4 mr-2" />
                     Export Video with Captions
                   </Button>
+
+                  <div className="pt-4 border-t">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Project Summary:
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-1">
+                      <div>• {captions.length} captions</div>
+                      <div>• {brollClips.length} B-Roll clips</div>
+                      <div>• {transitions.length} transitions</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

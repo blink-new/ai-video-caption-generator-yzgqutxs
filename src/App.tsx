@@ -22,12 +22,42 @@ export interface Caption {
     fontFamily: string
     position: 'bottom' | 'top' | 'center'
   }
+  animation: {
+    type: 'none' | 'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoom' | 'bounce' | 'typewriter' | 'glow'
+    duration: number
+    delay: number
+  }
+}
+
+export interface BRollClip {
+  id: string
+  file: File
+  url: string
+  startTime: number
+  endTime: number
+  duration: number
+  position: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+  opacity: number
+}
+
+export interface Transition {
+  id: string
+  type: 'cut' | 'fade' | 'slide' | 'zoom' | 'wipe' | 'dissolve'
+  duration: number
+  startTime: number
 }
 
 function App() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'edit'>('upload')
   const [videoFile, setVideoFile] = useState<VideoFile | null>(null)
   const [captions, setCaptions] = useState<Caption[]>([])
+  const [brollClips, setBrollClips] = useState<BRollClip[]>([])
+  const [transitions, setTransitions] = useState<Transition[]>([])
 
   const handleVideoUpload = (video: VideoFile) => {
     setVideoFile(video)
@@ -38,6 +68,8 @@ function App() {
     setCurrentStep('upload')
     setVideoFile(null)
     setCaptions([])
+    setBrollClips([])
+    setTransitions([])
   }
 
   return (
@@ -51,6 +83,10 @@ function App() {
           videoFile={videoFile}
           captions={captions}
           setCaptions={setCaptions}
+          brollClips={brollClips}
+          setBrollClips={setBrollClips}
+          transitions={transitions}
+          setTransitions={setTransitions}
           onBack={handleBackToUpload}
         />
       )}

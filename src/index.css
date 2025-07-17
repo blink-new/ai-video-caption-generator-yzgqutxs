@@ -94,3 +94,153 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Caption Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0%;
+  }
+
+  to {
+    opacity: 100%;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0%;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0%;
+    transform: translateY(-30px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0%;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0%;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateX(0);
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    opacity: 0%;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 100%;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0%;
+    transform: scale(0.3);
+  }
+
+  50% {
+    opacity: 100%;
+    transform: scale(1.05);
+  }
+
+  70% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    opacity: 100%;
+    transform: scale(1);
+  }
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    text-shadow: 0 0 5px currentcolor, 0 0 10px currentcolor, 0 0 15px currentcolor;
+  }
+
+  50% {
+    text-shadow: 0 0 10px currentcolor, 0 0 20px currentcolor, 0 0 30px currentcolor;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slide-left ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slide-right ease-out forwards;
+}
+
+.animate-zoom-in {
+  animation: zoom-in ease-out forwards;
+}
+
+.animate-bounce-in {
+  animation: bounce-in ease-out forwards;
+}
+
+.animate-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter linear forwards;
+}
+
+.animate-glow {
+  animation: glow ease-in-out infinite;
+}
