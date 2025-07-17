@@ -16,6 +16,7 @@ import BRollPanel from '@/components/BRollPanel'
 import TransitionsPanel from '@/components/TransitionsPanel'
 import { useToast } from '@/hooks/use-toast'
 import blink from '@/blink/client'
+import { extractAudioFromVideo, validateVideoFile, formatFileSize, estimateProcessingTime } from '@/lib/audioUtils'
 
 interface CaptionEditorProps {
   videoFile: VideoFile
@@ -85,22 +86,44 @@ const CaptionEditor: React.FC<CaptionEditorProps> = ({
     setIsGenerating(true)
     
     try {
+      // Validate video file first
+      const validation = validateVideoFile(videoFile.file)
+      if (!validation.isValid) {
+        throw new Error(validation.error)
+      }
+
+      const estimatedTime = estimateProcessingTime(videoFile.file.size)
       toast({
         title: "Generating Captions",
-        description: "AI is analyzing your video and generating captions...",
+        description: `AI is analyzing your video (${formatFileSize(videoFile.file.size)}). Estimated time: ${estimatedTime}`,
       })
 
-      // Convert video file to base64 for AI processing
-      const arrayBuffer = await videoFile.file.arrayBuffer()
+      // Extract audio from video with optimized processing
+      const audioResult = await extractAudioFromVideo(videoFile.file)
       
-      // Use Blink AI to transcribe audio and generate captions
-      const { text: transcription } = await blink.ai.transcribeAudio({
-        audio: arrayBuffer,
-        language: 'en'
-      })
+      // Use Blink AI to transcribe audio with proper error handling
+      let transcription: string
+      try {
+        const result = await blink.ai.transcribeAudio({
+          audio: audioResult.audioData,
+          language: 'en'
+        })
+        transcription = result.text
+      } catch (transcriptionError: any) {
+        // Handle specific transcription errors with better messages
+        if (transcriptionError.message?.includes('Invalid array length')) {
+          throw new Error('Video file is too large for processing. Please try with a smaller video file (under 50MB) or compress your video.')
+        } else if (transcriptionError.message?.includes('Audio transcription failed')) {
+          throw new Error('Failed to process audio from video. Please ensure your video has clear audio and try again.')
+        } else if (transcriptionError.message?.includes('No audio')) {
+          throw new Error('No audio track found in the video. Please ensure your video contains audio.')
+        } else {
+          throw new Error(`Transcription failed: ${transcriptionError.message || 'Unknown error'}`)
+        }
+      }
 
       if (!transcription || transcription.trim().length === 0) {
-        throw new Error('No speech detected in the video')
+        throw new Error('No speech detected in the video. Please ensure your video contains clear, audible speech.')
       }
 
       // Use AI to break transcription into timed segments and enhance for engagement
@@ -408,6 +431,56 @@ Make them:
                   Add Caption
                 </Button>
               </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add New Caption</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Caption Text</label>
+                    <Textarea
+                      value={newCaptionText}
+                      onChange={(e) => setNewCaptionText(e.target.value)}
+                      placeholder="Enter caption text..."
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Start Time (s)</label>
+                      <Input
+                        type="number"
+                        value={newCaptionStart}
+                        onChange={(e) => setNewCaptionStart(parseFloat(e.target.value) || 0)}
+                        min={0}
+                        max={videoFile.duration}
+                        step={0.1}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">End Time (s)</label>
+                      <Input
+                        type="number"
+                        value={newCaptionEnd}
+                        onChange={(e) => setNewCaptionEnd(parseFloat(e.target.value) || 0)}
+                        min={newCaptionStart}
+                        max={videoFile.duration}
+                        step={0.1}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={addNewCaption} disabled={!newCaptionText.trim()}>
+                      Add Caption
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
             </Dialog>
             
             <Button
@@ -677,57 +750,7 @@ Make them:
         </div>
       </div>
 
-      {/* Add Caption Dialog */}
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add New Caption</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Caption Text</label>
-            <Textarea
-              value={newCaptionText}
-              onChange={(e) => setNewCaptionText(e.target.value)}
-              placeholder="Enter caption text..."
-              className="mt-1"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Start Time (s)</label>
-              <Input
-                type="number"
-                value={newCaptionStart}
-                onChange={(e) => setNewCaptionStart(parseFloat(e.target.value) || 0)}
-                min={0}
-                max={videoFile.duration}
-                step={0.1}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">End Time (s)</label>
-              <Input
-                type="number"
-                value={newCaptionEnd}
-                onChange={(e) => setNewCaptionEnd(parseFloat(e.target.value) || 0)}
-                min={newCaptionStart}
-                max={videoFile.duration}
-                step={0.1}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={addNewCaption} disabled={!newCaptionText.trim()}>
-              Add Caption
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
+
 
       {/* Edit Caption Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

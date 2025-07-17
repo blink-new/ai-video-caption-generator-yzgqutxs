@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { VideoFile } from '@/App'
+import { validateVideoFile, formatFileSize } from '@/lib/audioUtils'
 
 interface VideoUploadProps {
   onVideoUpload: (video: VideoFile) => void
@@ -15,6 +16,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -23,6 +25,17 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     setError(null)
     setUploading(true)
     setUploadProgress(0)
+    setCurrentFile(file)
+
+    // Validate video file
+    const validation = validateVideoFile(file)
+    if (!validation.isValid) {
+      setError(validation.error!)
+      setUploading(false)
+      setUploadProgress(0)
+      setCurrentFile(null)
+      return
+    }
 
     try {
       // Simulate upload progress
@@ -50,6 +63,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
               duration: video.duration
             })
             setUploading(false)
+            setCurrentFile(null)
             resolve(video.duration)
           }, 500)
         }
@@ -60,6 +74,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
       setError('Failed to process video file. Please try again.')
       setUploading(false)
       setUploadProgress(0)
+      setCurrentFile(null)
     }
   }, [onVideoUpload])
 
@@ -123,7 +138,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
                 </div>
                 
                 <div className="text-sm text-gray-400">
-                  Supports MP4, MOV, AVI, MKV, WebM • Max 500MB
+                  Supports MP4, MOV, AVI, MKV, WebM • Max 100MB for AI processing
                 </div>
               </div>
             </div>
@@ -133,7 +148,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Processing video...
+                    Processing video{currentFile ? ` (${formatFileSize(currentFile.size)})` : ''}...
                   </span>
                   <span className="text-sm text-gray-500">
                     {uploadProgress}%
